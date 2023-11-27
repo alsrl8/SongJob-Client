@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:song_job/models/requests.dart';
 import 'package:song_job/models/job_post.dart';
 
 class JobPostCacheManager {
@@ -24,8 +25,8 @@ Future<List<JobPost>> fetchJobPostData(String cacheKey) async {
     return JobPostCacheManager.getData(cacheKey)!;
   }
 
-  var url = Uri.parse(
-      'http://192.168.0.6:8080/dummy'); // Adjusted API endpoint
+  var url =
+      Uri.parse('http://192.168.0.6:8080/job-posts'); // Adjusted API endpoint
   try {
     var response = await http.get(url);
     if (response.statusCode == 200) {
@@ -34,6 +35,68 @@ Future<List<JobPost>> fetchJobPostData(String cacheKey) async {
           jsonResponse.map((model) => JobPost.fromJson(model)));
       JobPostCacheManager.storeData(cacheKey, data);
       return data;
+    } else {
+      throw Exception('Request failed with status: ${response.statusCode}.');
+    }
+  } catch (e, stacktrace) {
+    print('Exception occurred: $e');
+    print('Stacktrace: $stacktrace'); // This will print the stacktrace
+    throw Exception('Error making request: $e');
+  }
+}
+
+
+Future<List<JobPost>> fetchFavoriteJobPostData(String cacheKey) async {
+  if (JobPostCacheManager.hasData(cacheKey)) {
+    return JobPostCacheManager.getData(cacheKey)!;
+  }
+
+  var url =
+  Uri.parse('http://192.168.0.6:8080/favorite-job-posts'); // Adjusted API endpoint
+  try {
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      Iterable jsonResponse = json.decode(response.body);
+      var data = List<JobPost>.from(
+          jsonResponse.map((model) => JobPost.fromJson(model)));
+      JobPostCacheManager.storeData(cacheKey, data);
+      return data;
+    } else {
+      throw Exception('Request failed with status: ${response.statusCode}.');
+    }
+  } catch (e, stacktrace) {
+    print('Exception occurred: $e');
+    print('Stacktrace: $stacktrace'); // This will print the stacktrace
+    throw Exception('Error making request: $e');
+  }
+}
+
+Future<void> addToFavorites(AddToFavoritesRequest request) async {
+  var url = Uri.parse('http://192.168.0.6:8080/add-to-favorites');
+  var jsonData = request.toJson();
+  try {
+    var response = await http.put(url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(jsonData));
+    if (response.statusCode == 200) {
+    } else {
+      throw Exception('Request failed with status: ${response.statusCode}.');
+    }
+  } catch (e, stacktrace) {
+    print('Exception occurred: $e');
+    print('Stacktrace: $stacktrace'); // This will print the stacktrace
+    throw Exception('Error making request: $e');
+  }
+}
+
+Future<void> removeFromFavorites(RemoveFromFavoriteRequest request) async {
+  var url = Uri.parse('http://192.168.0.6:8080/remove-from-favorites');
+  var jsonData = request.toJson();
+  try {
+    var response = await http.put(url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(jsonData));
+    if (response.statusCode == 200) {
     } else {
       throw Exception('Request failed with status: ${response.statusCode}.');
     }

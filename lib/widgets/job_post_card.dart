@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:song_job/models/job_post.dart';
-import 'package:song_job/services/favorite.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JobPostCardWidget extends StatefulWidget {
@@ -13,42 +12,15 @@ class JobPostCardWidget extends StatefulWidget {
 }
 
 class _JobPostCardWidgetState extends State<JobPostCardWidget> {
-  bool isFav = false;
-  bool isLoaded = false;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _checkFavoriteStatus();
-  // }
-
-  void _checkFavoriteStatus() async {
-    isFav = await isFavorite(widget.jobPost);
-    setState(() {
-      isLoaded = true;
-    });
-  }
-
-  void _toggleFavorite() async {
-    switchFavorite(widget.jobPost);
-    setState(() {
-      isFav = !isFav;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return _jobPostCard(
-      widget.jobPost,
-      FavoriteButtonData(
-        isFavorite: isFav,
-        isLoaded: isLoaded,
-        onPressed: _toggleFavorite,
-      ),
+      widget.jobPost
     );
   }
 
-  Widget _jobPostCard(JobPost jobPost, FavoriteButtonData favData) {
+  Widget _jobPostCard(JobPost jobPost) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.0)),
       elevation: 5,
@@ -60,7 +32,7 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(jobPost, favData),
+              _buildHeader(jobPost),
               const SizedBox(height: 8),
               const Divider(color: Colors.grey, height: 20),
               _buildDetails(jobPost),
@@ -71,7 +43,7 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
     );
   }
 
-  Widget _buildHeader(JobPost jobPost, FavoriteButtonData favData) {
+  Widget _buildHeader(JobPost jobPost) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -90,7 +62,6 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
             ],
           ),
         ),
-        if (favData.iconButton != null) favData.iconButton!,
       ],
     );
   }
@@ -121,24 +92,4 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
       // Handle URL launch failure
     }
   }
-}
-
-class FavoriteButtonData {
-  final bool isFavorite;
-  final bool isLoaded;
-  final VoidCallback? onPressed;
-
-  FavoriteButtonData({
-    required this.isFavorite,
-    required this.isLoaded,
-    this.onPressed,
-  });
-
-  IconButton? get iconButton => isLoaded
-      ? IconButton(
-          icon: Icon(isFavorite ? Icons.star : Icons.star_border),
-          color: Colors.yellow,
-          onPressed: onPressed,
-        )
-      : null;
 }
