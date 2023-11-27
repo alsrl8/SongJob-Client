@@ -29,4 +29,16 @@ class JobPost {
       recruitmentSite: json['recruitmentSite'] as String? ?? 'N/A',
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'company': company,
+      'techniques': techniques.join(', '),
+      'location': location,
+      'career': career,
+      'link': link,
+      'recruitmentSite': recruitmentSite,
+    };
+  }
 }

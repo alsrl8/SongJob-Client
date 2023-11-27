@@ -25,7 +25,7 @@ Future<List<JobPost>> fetchJobPostData(String cacheKey) async {
   }
 
   var url = Uri.parse(
-      'http://192.168.0.6:8080/jumpit'); // Adjusted API endpoint
+      'http://192.168.0.6:8080/dummy'); // Adjusted API endpoint
   try {
     var response = await http.get(url);
     if (response.statusCode == 200) {

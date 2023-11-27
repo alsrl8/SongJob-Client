@@ -2,6 +2,8 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:song_job/models/job_post.dart';
 import 'package:song_job/services/api_service.dart';
+import 'package:song_job/widgets/favorite.dart';
+import 'package:song_job/widgets/job_info.dart';
 import 'package:song_job/widgets/job_post_card.dart';
 
 class Home extends StatefulWidget {
@@ -27,43 +29,12 @@ class _HomeState extends State<Home> {
   Widget getMainWidget(BuildContext context) {
     switch (selectedIndex) {
       case 0:
-        return jobInfo(context);
+        return JobInfoWidget(); // TODO const를 사용할 것인지 고려
       case 1:
-        return const Placeholder();
+        return favorite(context);
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
-  }
-
-  Widget jobInfo(BuildContext context) {
-    var screenSize = MediaQuery.of(context).size;
-    var itemWidth = screenSize.width;
-    var itemHeight = screenSize.height;
-    const cacheKey = 'dummy_cache_key';
-
-    return FutureBuilder<List<JobPost>>(
-      future: fetchJobPostData(cacheKey),
-      builder: (BuildContext context, AsyncSnapshot<List<JobPost>> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (snapshot.hasData) {
-          return Swiper(
-            itemBuilder: (BuildContext context, int index) {
-              return jobPostCard(snapshot.data![index]);
-            },
-            indicatorLayout: PageIndicatorLayout.COLOR,
-            itemCount: snapshot.data!.length,
-            layout: SwiperLayout.TINDER,
-            itemWidth: itemWidth,
-            itemHeight: itemHeight,
-          );
-        } else {
-          return const Center(child: Text('No data available'));
-        }
-      },
-    );
   }
 
   SafeArea bottomNavigationBar(BuildContext context) {
