@@ -8,12 +8,11 @@ Future<bool> isFavorite(JobPost jobPost) async {
   return await dbHelper.isFavorite(jobPost);
 }
 
-void switchFavorite(JobPost jobPost, VoidCallback onFavoriteChanged) async {
+void switchFavorite(JobPost jobPost) async {
   var dbHelper = DatabaseHelper.instance;
   if (await isFavorite(jobPost) == false) {
     await dbHelper.addToFavorite(jobPost);
   } else {
     await dbHelper.removeFavorite(jobPost);
   }
-  onFavoriteChanged();
 }

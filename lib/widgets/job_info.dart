@@ -1,105 +1,106 @@
-import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:song_job/models/job_post.dart';
 import 'package:song_job/services/api_service.dart';
+import 'package:song_job/services/data_service.dart';
 import 'package:song_job/services/favorite.dart';
 import 'package:song_job/widgets/job_post_card.dart';
 
 class JobInfoWidget extends StatefulWidget {
-  const JobInfoWidget({Key? key}) : super(key: key);
+  final double availableHeight;
+
+  const JobInfoWidget({Key? key, required this.availableHeight})
+      : super(key: key);
 
   @override
   State<JobInfoWidget> createState() => _JobInfoWidgetState();
 }
 
 class _JobInfoWidgetState extends State<JobInfoWidget> {
+  int currentIndex = 0;
+
   @override
   Widget build(BuildContext context) {
-    return _buildJobInfo(context);
-  }
-
-  Widget _buildJobInfo(BuildContext context) {
-    final screenSize = MediaQuery
-        .of(context)
-        .size;
-    final screenWidth = screenSize.width;
-    final screenHeight = screenSize.height;
-    const cacheKey = 'dummy_cache_key';
-
     return FutureBuilder<List<JobPost>>(
-      future: fetchJobPostData(cacheKey),
-      builder: (context, snapshot) =>
-          _buildSwiper(context, snapshot, screenWidth, screenHeight),
+      future: fetchJobPostData('dummy_cache_key'),
+      builder: (context, snapshot) => buildContentBasedOnSnapshot(context, snapshot),
     );
   }
 
-  Widget _buildSwiper(BuildContext context,
-      AsyncSnapshot<List<JobPost>> snapshot, double width, double height) {
+  Widget buildContentBasedOnSnapshot(BuildContext context, AsyncSnapshot<List<JobPost>> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     } else if (snapshot.hasError) {
       return Center(child: Text('Error: ${snapshot.error}'));
-    } else if (snapshot.hasData) {
-      return _buildJobSwiper(snapshot.data!, width, height);
-    } else {
+    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
       return const Center(child: Text('No data available'));
     }
+
+    return buildJobSwiper(context, snapshot.data!);
   }
 
-  Widget _buildJobSwiper(List<JobPost> data, double width, double height) {
-    return Swiper(
-      itemBuilder: (context, index) {
-        var jobPost = data[index];
-        return _buildJobSwiperWithFavorite(jobPost);
-      },
-      indicatorLayout: PageIndicatorLayout.COLOR,
-      itemCount: data.length,
-      layout: SwiperLayout.TINDER,
-      itemWidth: width,
-      itemHeight: height,
+  Widget buildJobSwiper(BuildContext context, List<JobPost> jobPosts) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Draggable(
+      feedback: buildJobCard(context, jobPosts[currentIndex], screenWidth),
+      childWhenDragging: currentIndex < jobPosts.length - 1
+          ? buildJobCard(context, jobPosts[currentIndex + 1], screenWidth)
+          : Container(),
+      onDragEnd: (details) => _swipeCard(details, jobPosts[currentIndex], jobPosts.length),
+      child: buildJobCard(context, jobPosts[currentIndex], screenWidth),
     );
   }
 
-  Widget _buildJobSwiperWithFavorite(JobPost jobPost) {
+  void _swipeCard(DraggableDetails details, JobPost jobPost, int dataLength) {
+    var dx = details.offset.dx;
+    if (dx.abs() <= 150) return;
+
+    if (dx < 0) {
+      _swipeLeft();
+    } else {
+      _swipeRight(jobPost);
+    }
+    _updateCurrentIndex(dataLength);
+  }
+
+  void _swipeLeft() {
+
+  }
+
+  void _swipeRight(JobPost jobPost) {
+    DatabaseHelper.instance.addToFavorite(jobPost);
+  }
+
+  void _updateCurrentIndex(int dataLength) {
+    setState(() {
+      currentIndex = (currentIndex + 1) % dataLength;
+    });
+  }
+
+  Widget buildJobCard(BuildContext context, JobPost jobPost, double width) {
+    return SizedBox(
+      width: width,
+      height: widget.availableHeight,
+      child: buildFavoriteIndicator(jobPost),
+    );
+  }
+
+  Widget buildFavoriteIndicator(JobPost jobPost) {
     return FutureBuilder<bool>(
       future: isFavorite(jobPost),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingJobPostCard(jobPost);
+          return buildLoadingJobPostCard(jobPost);
         } else if (snapshot.hasError) {
-          return _buildErrorJobPostCard(jobPost);
+          return buildErrorJobPostCard(jobPost);
         }
-
-        bool isFav = snapshot.data ?? false;
-        return jobPostCard(
-          jobPost,
-          FavoriteButtonData(
-            isFavorite: isFav,
-            isLoaded: true,
-            onPressed: () => switchFavorite(jobPost, _handleFavoriteChanged),
-          ),
-        );
+        return JobPostCardWidget(jobPost: jobPost);
       },
     );
   }
 
-  Widget _buildLoadingJobPostCard(JobPost jobPost) {
-    return jobPostCard(
-      jobPost,
-      FavoriteButtonData(isFavorite: false, isLoaded: false),
-    );
-  }
+  Widget buildLoadingJobPostCard(JobPost jobPost) => JobPostCardWidget(jobPost: jobPost);
 
-  Widget _buildErrorJobPostCard(JobPost jobPost) {
-    return jobPostCard(
-      jobPost,
-      FavoriteButtonData(isFavorite: false, isLoaded: false),
-    );
-  }
-
-  void _handleFavoriteChanged() {
-    setState(() {
-
-    });
-  }
+  Widget buildErrorJobPostCard(JobPost jobPost) => JobPostCardWidget(jobPost: jobPost);
 }
+
+enum Direction { left, right }

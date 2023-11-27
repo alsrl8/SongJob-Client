@@ -33,7 +33,7 @@ dependencies:
 
   http: ^0.13.3
 
-  card_swiper: ^3.0.1
+#  card_swiper: ^3.0.1
 
   url_launcher: ^6.2.1
 
