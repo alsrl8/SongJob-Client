@@ -18,15 +18,22 @@ class JobPostCacheManager {
   static bool hasData(String key) {
     return _cache.containsKey(key);
   }
+
+  static void removeData(String key) {
+    _cache.remove(key);
+  }
+}
+
+void removeCache(String cacheKey) {
+  JobPostCacheManager.removeData(cacheKey);
 }
 
 Future<List<JobPost>> fetchJobPostData(String cacheKey) async {
-  if (JobPostCacheManager.hasData(cacheKey)) {
+  if (cacheKey != "" && JobPostCacheManager.hasData(cacheKey)) {
     return JobPostCacheManager.getData(cacheKey)!;
   }
 
-  var url =
-      Uri.parse('http://192.168.0.6:8080/job-posts'); // Adjusted API endpoint
+  var url = Uri.parse('http://192.168.0.6:8080/job-posts');
   try {
     var response = await http.get(url);
     if (response.statusCode == 200) {
@@ -45,14 +52,13 @@ Future<List<JobPost>> fetchJobPostData(String cacheKey) async {
   }
 }
 
-
 Future<List<JobPost>> fetchFavoriteJobPostData(String cacheKey) async {
   if (JobPostCacheManager.hasData(cacheKey)) {
     return JobPostCacheManager.getData(cacheKey)!;
   }
 
-  var url =
-  Uri.parse('http://192.168.0.6:8080/favorite-job-posts'); // Adjusted API endpoint
+  var url = Uri.parse(
+      'http://192.168.0.6:8080/favorite-job-posts'); // Adjusted API endpoint
   try {
     var response = await http.get(url);
     if (response.statusCode == 200) {

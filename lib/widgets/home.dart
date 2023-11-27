@@ -36,7 +36,7 @@ class _HomeState extends State<Home> {
             maxWidth: constraints.maxWidth,
             maxHeight: constraints.maxHeight,
           ),
-          child: JobInfoWidget(availableHeight: constraints.maxHeight),
+          child: JobInfoWidget(width: constraints.maxWidth, height: constraints.maxHeight),
         );
       case 1:
         return const FavoriteWidget();

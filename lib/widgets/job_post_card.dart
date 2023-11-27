@@ -1,23 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:song_job/models/job_post.dart';
+import 'package:song_job/models/requests.dart';
+import 'package:song_job/services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class JobPostCardWidget extends StatefulWidget {
-  final JobPost jobPost;
+typedef NextJobPostCallback = int Function(int);
 
-  const JobPostCardWidget({Key? key, required this.jobPost}) : super(key: key);
+class JobPostCardWidget extends StatefulWidget {
+  final List<JobPost> jobPosts;
+  final double width;
+  final double height;
+  final Function fetchJobPostsCallback;
+
+  const JobPostCardWidget({
+    Key? key,
+    required this.jobPosts,
+    required this.width,
+    required this.height,
+    required this.fetchJobPostsCallback,
+  }) : super(key: key);
 
   @override
   State<JobPostCardWidget> createState() => _JobPostCardWidgetState();
 }
 
 class _JobPostCardWidgetState extends State<JobPostCardWidget> {
+  int _currentIndex = 0;
+  int _currentViewIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _jobPostCard(
-      widget.jobPost
+    return _buildDraggableJobPostCard();
+  }
+
+  Widget _buildDraggableJobPostCard() {
+    bool hasJobPosts = _currentViewIndex < widget.jobPosts.length;
+    return Draggable(
+      feedback: Material(
+        elevation: 5.0,
+        type: MaterialType.transparency,
+        child: _jobCardSizedBox(hasJobPosts, _currentViewIndex),
+      ),
+      childWhenDragging: _jobCardSizedBox(
+          _currentViewIndex + 1 < widget.jobPosts.length,
+          _currentViewIndex + 1),
+      onDragEnd: _onDragEnd,
+      child: _jobCardSizedBox(hasJobPosts, _currentViewIndex),
     );
+  }
+
+  SizedBox _jobCardSizedBox(bool show, int viewIndex) {
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: show ? _jobPostCard(widget.jobPosts[viewIndex]) : Container(),
+    );
+  }
+
+  void _onDragEnd(DraggableDetails details) async {
+    const validOffset = 150;
+    if (details.offset.dx.abs() < validOffset) return;
+
+    setState(() => _currentViewIndex++);
+    await _handleSwipe(details);
+    setState(() {
+      if (_currentIndex + 1 < widget.jobPosts.length) {
+        _currentIndex++;
+      } else {
+        widget.fetchJobPostsCallback();
+      }
+    });
+  }
+
+  Future<void> _handleSwipe(DraggableDetails details) async {
+    var jobPost = widget.jobPosts[_currentIndex];
+    if (details.offset.dx < 0) {
+      await _handleSwipeLeft(jobPost);
+    } else {
+      await _handleSwipeRight(jobPost);
+    }
+  }
+
+  Future<void> _handleSwipeLeft(JobPost jobPost) async {
+    var request = RemoveFromFavoriteRequest(link: jobPost.link);
+    await removeFromFavorites(request);
+  }
+
+  Future<void> _handleSwipeRight(JobPost jobPost) async {
+    var request = AddToFavoritesRequest(link: jobPost.link);
+    await addToFavorites(request);
   }
 
   Widget _jobPostCard(JobPost jobPost) {
@@ -30,7 +106,6 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
         child: Padding(
           padding: const EdgeInsets.all(25),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(jobPost),
               const SizedBox(height: 8),
@@ -44,45 +119,59 @@ class _JobPostCardWidgetState extends State<JobPostCardWidget> {
   }
 
   Widget _buildHeader(JobPost jobPost) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(jobPost.name,
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent)),
-              const SizedBox(height: 4),
-              Text(jobPost.company,
-                  style: const TextStyle(fontSize: 18, color: Colors.white70)),
-            ],
-          ),
-        ),
-      ],
+    return SizedBox(
+      width: widget.width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(jobPost.name,
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent)),
+                const SizedBox(height: 4),
+                Text(jobPost.company,
+                    style:
+                        const TextStyle(fontSize: 18, color: Colors.white70)),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 
   Widget _buildDetails(JobPost jobPost) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Techniques: ${jobPost.techniques.join(', ')}',
-            style: const TextStyle(fontSize: 16, color: Colors.white70)),
-        const SizedBox(height: 5),
-        Text('Location: ${jobPost.location}',
-            style: const TextStyle(fontSize: 16, color: Colors.white70)),
-        const SizedBox(height: 5),
-        Text('Career: ${jobPost.career}',
-            style: const TextStyle(fontSize: 16, color: Colors.white70)),
-        const SizedBox(height: 5),
-        Text('Recruitment Site: ${jobPost.recruitmentSite}',
-            style: const TextStyle(fontSize: 16, color: Colors.white70)),
-        const SizedBox(height: 10),
-      ],
+    return SizedBox(
+      width: widget.width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Techniques: ${jobPost.techniques.join(', ')}',
+                    style:
+                        const TextStyle(fontSize: 16, color: Colors.white70)),
+                Text('Location: ${jobPost.location}',
+                    style:
+                        const TextStyle(fontSize: 16, color: Colors.white70)),
+                Text('Career: ${jobPost.career}',
+                    style:
+                        const TextStyle(fontSize: 16, color: Colors.white70)),
+                Text('Recruitment Site: ${jobPost.recruitmentSite}',
+                    style:
+                        const TextStyle(fontSize: 16, color: Colors.white70)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

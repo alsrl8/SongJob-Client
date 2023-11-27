@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:song_job/models/job_post.dart';
 import 'package:song_job/services/api_service.dart';
-import 'package:song_job/services/data_service.dart';
 import 'package:song_job/widgets/job_post_card.dart';
 
 class JobInfoWidget extends StatefulWidget {
-  final double availableHeight;
+  final double width;
+  final double height;
+  final String dummyCacheKey = 'dummyCacheKey';
 
-  const JobInfoWidget({Key? key, required this.availableHeight})
+  const JobInfoWidget({Key? key, required this.width, required this.height})
       : super(key: key);
 
   @override
@@ -15,12 +16,19 @@ class JobInfoWidget extends StatefulWidget {
 }
 
 class _JobInfoWidgetState extends State<JobInfoWidget> {
-  int currentIndex = 0;
+  late List<JobPost> jobPosts;
+
+  @override
+  void initState() {
+    super.initState();
+    var data = fetchJobPostData(widget.dummyCacheKey);
+    data.then((value) => {jobPosts = value});
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<JobPost>>(
-      future: fetchJobPostData('dummy_cache_key'),
+      future: fetchJobPostData(widget.dummyCacheKey),
       builder: (context, snapshot) =>
           buildContentBasedOnSnapshot(context, snapshot),
     );
@@ -35,52 +43,21 @@ class _JobInfoWidgetState extends State<JobInfoWidget> {
     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
       return const Center(child: Text('No data available'));
     }
-
-    return buildJobSwiper(context, snapshot.data!);
+    return buildJobCard(context);
   }
 
-  Widget buildJobSwiper(BuildContext context, List<JobPost> jobPosts) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return Draggable(
-      feedback: buildJobCard(context, jobPosts[currentIndex], screenWidth),
-      childWhenDragging: currentIndex < jobPosts.length - 1
-          ? buildJobCard(context, jobPosts[currentIndex + 1], screenWidth)
-          : Container(),
-      onDragEnd: (details) =>
-          _swipeCard(details, jobPosts[currentIndex], jobPosts.length),
-      child: buildJobCard(context, jobPosts[currentIndex], screenWidth),
-    );
-  }
-
-  void _swipeCard(DraggableDetails details, JobPost jobPost, int dataLength) {
-    var dx = details.offset.dx;
-    if (dx.abs() <= 150) return;
-
-    if (dx < 0) {
-      _swipeLeft();
-    } else {
-      _swipeRight(jobPost);
-    }
-    _updateCurrentIndex(dataLength);
-  }
-
-  void _swipeLeft() {}
-
-  void _swipeRight(JobPost jobPost) {
-    DatabaseHelper.instance.addToFavorite(jobPost);
-  }
-
-  void _updateCurrentIndex(int dataLength) {
-    setState(() {
-      currentIndex = (currentIndex + 1) % dataLength;
-    });
-  }
-
-  Widget buildJobCard(BuildContext context, JobPost jobPost, double width) {
-    return SizedBox(
-      width: width,
-      height: widget.availableHeight,
-      child: JobPostCardWidget(jobPost: jobPost),
+  Widget buildJobCard(BuildContext context) {
+    return JobPostCardWidget(
+      jobPosts: jobPosts,
+      width: widget.width,
+      height: widget.height,
+      fetchJobPostsCallback: () async {
+        removeCache(widget.dummyCacheKey);
+        var data = await fetchJobPostData(widget.dummyCacheKey);
+        setState(() {
+            jobPosts = data;
+        });
+      },
     );
   }
 }
