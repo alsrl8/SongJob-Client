@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:song_job/widgets/favorite.dart';
+import 'package:song_job/widgets/favorite_info.dart';
 import 'package:song_job/widgets/job_info.dart';
 
 class Home extends StatefulWidget {
@@ -36,10 +36,18 @@ class _HomeState extends State<Home> {
             maxWidth: constraints.maxWidth,
             maxHeight: constraints.maxHeight,
           ),
-          child: JobInfoWidget(width: constraints.maxWidth, height: constraints.maxHeight),
+          child: JobInfoWidget(
+              width: constraints.maxWidth, height: constraints.maxHeight),
         );
       case 1:
-        return const FavoriteWidget();
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: constraints.maxWidth,
+            maxHeight: constraints.maxHeight,
+          ),
+          child: FavoriteInfo(
+              width: constraints.maxWidth, height: constraints.maxHeight),
+        );
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
